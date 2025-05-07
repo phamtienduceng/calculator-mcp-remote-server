@@ -2,15 +2,14 @@ name: calculator-mcp-server
 version: 1.0.0
 description: SSE Calculator MCP Server
 
-# Build configuration
-build:
-  framework: nodejs
-  buildCommand: npm run build
-  startCommand: node dist/main
-  port: 3000
-  healthCheckPath: /
-  environment:
-    NODE_ENV: production
+# Build and runtime configuration
+framework: nodejs
+buildCommand: npm run build
+startCommand: node dist/main
+port: 3000
+healthCheckPath: /
+environment:
+  NODE_ENV: production
 
 # Scaling configuration
 scaling:
