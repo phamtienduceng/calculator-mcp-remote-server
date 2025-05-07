@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "remote-calculator": {
+      "url": "http://localhost:3000/calculator/stream",
+      "disabled": false,
+      "alwaysAllow": [],
+      "timeout": 60
+    }
+  }
+}

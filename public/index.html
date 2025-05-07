@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSE Calculator Client</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .calculator {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .display {
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 24px;
+      text-align: right;
+      min-height: 40px;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      padding: 15px;
+      font-size: 18px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e9e9e9;
+    }
+    .history {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 20px;
+    }
+    .history h2 {
+      margin-top: 0;
+    }
+    .history-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>SSE Calculator</h1>
+  
+  <div class="status" id="connection-status">Connecting...</div>
+  
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button onclick="appendNumber(7)">7</button>
+      <button onclick="appendNumber(8)">8</button>
+      <button onclick="appendNumber(9)">9</button>
+      <button onclick="setOperation('divide')">/</button>
+      <button onclick="appendNumber(4)">4</button>
+      <button onclick="appendNumber(5)">5</button>
+      <button onclick="appendNumber(6)">6</button>
+      <button onclick="setOperation('multiply')">*</button>
+      <button onclick="appendNumber(1)">1</button>
+      <button onclick="appendNumber(2)">2</button>
+      <button onclick="appendNumber(3)">3</button>
+      <button onclick="setOperation('subtract')">-</button>
+      <button onclick="appendNumber(0)">0</button>
+      <button onclick="clearDisplay()">C</button>
+      <button onclick="calculate()">=</button>
+      <button onclick="setOperation('add')">+</button>
+    </div>
+  </div>
+  
+  <div class="history">
+    <h2>Calculation History</h2>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <script>
+    let sessionId = null;
+    let currentValue = 0;
+    let firstOperand = null;
+    let operation = null;
+    let waitingForSecondOperand = false;
+    
+    // Connect to SSE endpoint
+    function connectSSE() {
+      const statusElement = document.getElementById('connection-status');
+      statusElement.textContent = 'Connecting...';
+      statusElement.classList.remove('error');
+      
+      const eventSource = new EventSource('/calculator/stream');
+      
+      eventSource.onopen = () => {
+        statusElement.textContent = 'Connected';
+      };
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log('SSE event:', data);
+        
+        if (data.type === 'connected') {
+          sessionId = data.sessionId || data.data.sessionId;
+          statusElement.textContent = `Connected (Session ID: ${sessionId})`;
+        } else if (data.type === 'calculation') {
+          updateDisplay(data.data.result);
+          addHistoryItem(data.data);
+        } else if (data.type === 'error') {
+          statusElement.textContent = `Error: ${data.data.message}`;
+          statusElement.classList.add('error');
+        } else if (data.type === 'history') {
+          updateHistoryList(data.data);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+        statusElement.textContent = 'Connection error. Reconnecting...';
+        statusElement.classList.add('error');
+      };
+      
+      return eventSource;
+    }
+    
+    const eventSource = connectSSE();
+    
+    // Calculator functions
+    function updateDisplay(value) {
+      currentValue = value;
+      document.getElementById('display').textContent = value;
+    }
+    
+    function appendNumber(number) {
+      const displayElement = document.getElementById('display');
+      
+      if (waitingForSecondOperand) {
+        displayElement.textContent = number;
+        waitingForSecondOperand = false;
+      } else {
+        const currentDisplay = displayElement.textContent;
+        displayElement.textContent = currentDisplay === '0' ? number : currentDisplay + number;
+      }
+    }
+    
+    function clearDisplay() {
+      updateDisplay(0);
+      firstOperand = null;
+      operation = null;
+      waitingForSecondOperand = false;
+      
+      if (sessionId) {
+        performCalculation('clear');
+      }
+    }
+    
+    function setOperation(op) {
+      const displayValue = parseFloat(document.getElementById('display').textContent);
+      
+      if (firstOperand === null) {
+        firstOperand = displayValue;
+      } else if (operation) {
+        const result = performCalculation(operation, firstOperand, displayValue);
+        firstOperand = result;
+      }
+      
+      operation = op;
+      waitingForSecondOperand = true;
+    }
+    
+    function calculate() {
+      if (!operation || firstOperand === null) return;
+      
+      const secondOperand = parseFloat(document.getElementById('display').textContent);
+      performCalculation(operation, firstOperand, secondOperand);
+      
+      operation = null;
+      firstOperand = null;
+      waitingForSecondOperand = true;
+    }
+    
+    function performCalculation(op, a, b) {
+      if (!sessionId) return;
+      
+      const requestBody = {
+        operation: op
+      };
+      
+      if (op !== 'clear') {
+        requestBody.a = a;
+        requestBody.b = b;
+      }
+      
+      fetch(`/calculator/calculate/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Calculation result:', data);
+        return data.result;
+      })
+      .catch(error => {
+        console.error('Calculation error:', error);
+        document.getElementById('connection-status').textContent = `Error: ${error.message}`;
+        document.getElementById('connection-status').classList.add('error');
+      });
+    }
+    
+    // History functions
+    function addHistoryItem(calculation) {
+      const historyList = document.getElementById('history-list');
+      const historyItem = document.createElement('div');
+      historyItem.className = 'history-item';
+      historyItem.textContent = `${calculation.operation} = ${calculation.result}`;
+      historyList.prepend(historyItem);
+    }
+    
+    function updateHistoryList(history) {
+      const historyList = document.getElementById('history-list');
+      historyList.innerHTML = '';
+      
+      if (Array.isArray(history)) {
+        history.forEach(item => {
+          addHistoryItem(item);
+        });
+      }
+    }
+    
+    // Fetch history when connected
+    function fetchHistory() {
+      if (!sessionId) return;
+      
+      fetch(`/calculator/history/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+          updateHistoryList(data);
+        })
+        .catch(error => {
+          console.error('Error fetching history:', error);
+        });
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    });
+  </script>
+</body>
+</html>

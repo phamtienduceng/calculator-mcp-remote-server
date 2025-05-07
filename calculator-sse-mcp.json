@@ -1,0 +1,153 @@
+{
+  "name": "calculator-sse",
+  "version": "1.0.0",
+  "description": "Stateful calculator MCP service using SSE",
+  "baseUrl": "http://localhost:3000",
+  "protocols": ["sse"],
+  "endpoints": {
+    "stream": {
+      "method": "SSE",
+      "path": "/calculator/stream",
+      "description": "Create calculation session with SSE streaming"
+    },
+    "calculate": {
+      "method": "POST",
+      "path": "/calculator/calculate/:sessionId",
+      "description": "Perform calculation on a session",
+      "requestFormat": {
+        "operation": "string",
+        "a": "number",
+        "b": "number"
+      },
+      "responseFormat": {
+        "result": "number",
+        "sessionId": "string",
+        "operation": "string",
+        "timestamp": "string"
+      }
+    },
+    "history": {
+      "method": "GET",
+      "path": "/calculator/history/:sessionId",
+      "description": "Get calculation history for a session",
+      "requestFormat": {},
+      "responseFormat": {
+        "history": "array"
+      }
+    },
+    "sessions": {
+      "method": "GET",
+      "path": "/calculator/sessions",
+      "description": "Get all active sessions",
+      "requestFormat": {},
+      "responseFormat": {
+        "sessions": "array"
+      }
+    }
+  },
+  "stateTracking": true,
+  "tools": [
+    {
+      "name": "add",
+      "description": "Add two numbers",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "a": {
+            "type": "number",
+            "description": "First number"
+          },
+          "b": {
+            "type": "number",
+            "description": "Second number"
+          }
+        },
+        "required": ["sessionId", "a", "b"]
+      }
+    },
+    {
+      "name": "subtract",
+      "description": "Subtract second number from first",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "a": {
+            "type": "number",
+            "description": "First number"
+          },
+          "b": {
+            "type": "number",
+            "description": "Second number"
+          }
+        },
+        "required": ["sessionId", "a", "b"]
+      }
+    },
+    {
+      "name": "multiply",
+      "description": "Multiply two numbers",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "a": {
+            "type": "number",
+            "description": "First number"
+          },
+          "b": {
+            "type": "number",
+            "description": "Second number"
+          }
+        },
+        "required": ["sessionId", "a", "b"]
+      }
+    },
+    {
+      "name": "divide",
+      "description": "Divide first number by second",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "a": {
+            "type": "number",
+            "description": "First number"
+          },
+          "b": {
+            "type": "number",
+            "description": "Second number"
+          }
+        },
+        "required": ["sessionId", "a", "b"]
+      }
+    },
+    {
+      "name": "clear",
+      "description": "Clear calculation state",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID"
+          }
+        },
+        "required": ["sessionId"]
+      }
+    }
+  ]
+}

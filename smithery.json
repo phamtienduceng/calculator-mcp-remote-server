@@ -1,0 +1,48 @@
+{
+  "name": "calculator-mcp-server",
+  "version": "1.0.0",
+  "description": "SSE Calculator MCP Server",
+  "framework": "nodejs",
+  "buildCommand": "npm run build",
+  "startCommand": "node dist/main",
+  "port": 3000,
+  "healthCheckPath": "/",
+  "environment": {
+    "NODE_ENV": "production"
+  },
+  "scaling": {
+    "minInstances": 1,
+    "maxInstances": 3,
+    "cpuThreshold": 80,
+    "memoryThreshold": 80
+  },
+  "routes": [
+    {
+      "path": "/",
+      "methods": ["GET", "POST"]
+    },
+    {
+      "path": "/calculator/stream",
+      "methods": ["GET"],
+      "timeout": 3600
+    },
+    {
+      "path": "/calculator/calculate/:sessionId",
+      "methods": ["POST"]
+    },
+    {
+      "path": "/calculator/history/:sessionId",
+      "methods": ["GET"]
+    },
+    {
+      "path": "/calculator/sessions",
+      "methods": ["GET"]
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "methods": ["GET", "POST"],
+    "headers": ["Content-Type", "Authorization"]
+  }
+}
