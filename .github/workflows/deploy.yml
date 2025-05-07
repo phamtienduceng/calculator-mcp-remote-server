@@ -47,4 +47,4 @@ jobs:
       with:
         api-token: ${{ secrets.SMITHERY_API_TOKEN }}
         project-name: calculator-mcp-server
-        config-file: ./smithery.json
+        config-file: ./smithery.yaml
