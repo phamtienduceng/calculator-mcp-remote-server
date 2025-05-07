@@ -1,4 +1,4 @@
-name: Test and Deploy
+name: Test and Build
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     - run: npm run build --if-present
     - run: npm test
 
-  deploy:
+  build:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -40,21 +40,27 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     
-    # Deploy to Smithery.ai using curl
-    - name: Deploy to Smithery.ai
-      env:
-        SMITHERY_API_TOKEN: ${{ secrets.SMITHERY_API_TOKEN }}
+    # Create artifacts for manual deployment
+    - name: Create deployment artifacts
       run: |
-        echo "Deploying to Smithery.ai..."
-        # Create a deployment using the Smithery API
-        curl -X POST \
-          -H "Authorization: Bearer $SMITHERY_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "projectName": "calculator-mcp-server",
-            "branch": "main",
-            "configPath": "./smithery.yaml"
-          }' \
-          https://api.smithery.ai/v1/deployments
+        mkdir -p deployment
+        cp -r dist deployment/
+        cp package.json deployment/
+        cp smithery.yaml deployment/
+        cp Dockerfile deployment/
         
-        echo "Deployment triggered. Check Smithery.ai dashboard for status."
+    # Upload artifacts for manual deployment
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-artifacts
+        path: deployment/
+        
+    - name: Deployment instructions
+      run: |
+        echo "Build completed successfully."
+        echo "To deploy to Smithery.ai:"
+        echo "1. Download the deployment artifacts"
+        echo "2. Go to https://smithery.ai/new"
+        echo "3. Connect your GitHub repository"
+        echo "4. Follow the deployment instructions in SMITHERY_DEPLOYMENT.md"
