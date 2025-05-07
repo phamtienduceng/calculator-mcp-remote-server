@@ -8,9 +8,27 @@ buildCommand: npm run build
 
 # Runtime configuration
 startCommand:
+  type: http
   command: node
   args: [dist/main]
   port: 3000
+  commandFunction: |
+    async function startServer() {
+      // This function is used by Smithery to start the server
+      const { spawn } = require('child_process');
+      const server = spawn('node', ['dist/main']);
+      
+      // Log output
+      server.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+      });
+      
+      server.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+      });
+      
+      return server;
+    }
 
 # Health check configuration
 healthCheck:
