@@ -40,27 +40,16 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     
-    # Create artifacts for manual deployment
-    - name: Create deployment artifacts
+    # Verify build artifacts
+    - name: Verify build artifacts
       run: |
-        mkdir -p deployment
-        cp -r dist deployment/
-        cp package.json deployment/
-        cp smithery.yaml deployment/
-        cp Dockerfile deployment/
-        
-    # Upload artifacts for manual deployment
-    - name: Upload deployment artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: deployment-artifacts
-        path: deployment/
+        echo "Build completed successfully."
+        echo "Verifying build artifacts..."
+        ls -la dist/
         
     - name: Deployment instructions
       run: |
-        echo "Build completed successfully."
         echo "To deploy to Smithery.ai:"
-        echo "1. Download the deployment artifacts"
-        echo "2. Go to https://smithery.ai/new"
-        echo "3. Connect your GitHub repository"
-        echo "4. Follow the deployment instructions in SMITHERY_DEPLOYMENT.md"
+        echo "1. Go to https://smithery.ai/new"
+        echo "2. Connect your GitHub repository"
+        echo "3. Follow the deployment instructions in SMITHERY_DEPLOYMENT.md"
