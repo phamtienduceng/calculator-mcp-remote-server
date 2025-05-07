@@ -40,11 +40,21 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     
-    # Deploy to Smithery.ai
-    # Note: You'll need to set up SMITHERY_API_TOKEN in your GitHub repository secrets
+    # Deploy to Smithery.ai using curl
     - name: Deploy to Smithery.ai
-      uses: smithery-ai/deploy-action@v1
-      with:
-        api-token: ${{ secrets.SMITHERY_API_TOKEN }}
-        project-name: calculator-mcp-server
-        config-file: ./smithery.yaml
+      env:
+        SMITHERY_API_TOKEN: ${{ secrets.SMITHERY_API_TOKEN }}
+      run: |
+        echo "Deploying to Smithery.ai..."
+        # Create a deployment using the Smithery API
+        curl -X POST \
+          -H "Authorization: Bearer $SMITHERY_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "projectName": "calculator-mcp-server",
+            "branch": "main",
+            "configPath": "./smithery.yaml"
+          }' \
+          https://api.smithery.ai/v1/deployments
+        
+        echo "Deployment triggered. Check Smithery.ai dashboard for status."
