@@ -51,7 +51,7 @@ jobs:
         
     # Upload artifacts for manual deployment
     - name: Upload deployment artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: deployment-artifacts
         path: deployment/
